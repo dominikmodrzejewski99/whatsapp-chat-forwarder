@@ -10,11 +10,11 @@ class GoogleChatClient {
   async initialize() {
     try {
       console.log('Initializing Google Chat client with webhook...');
-      
+
       if (!this.webhookUrl) {
         throw new Error('Webhook URL is not configured. Please set GOOGLE_CHAT_WEBHOOK_URL in .env file.');
       }
-      
+
       console.log('Google Chat client initialized successfully with webhook');
     } catch (error) {
       console.error('Error initializing Google Chat client:', error);
@@ -23,9 +23,17 @@ class GoogleChatClient {
     }
   }
 
+  /**
+   * Sprawdza, czy klient Google Chat jest skonfigurowany
+   * @returns {boolean} true jeśli klient jest skonfigurowany, false w przeciwnym razie
+   */
+  isConfigured() {
+    return !!this.webhookUrl;
+  }
+
   async sendMessage(message) {
     console.log(`Attempting to send message to Google Chat...`);
-    
+
     if (!this.webhookUrl) {
       console.error('Webhook URL is not configured');
       throw new Error('Webhook URL is not configured');
@@ -33,9 +41,9 @@ class GoogleChatClient {
 
     try {
       console.log(`Sending message to webhook...`);
-      
+
       let payload;
-      
+
       // Check if message is a JSON string (for cards format)
       if (typeof message === 'string' && message.startsWith('{') && message.endsWith('}')) {
         try {
@@ -51,7 +59,7 @@ class GoogleChatClient {
         // Regular text message
         payload = { text: message };
       }
-      
+
       const response = await axios.post(this.webhookUrl, payload);
 
       console.log('Message sent to Google Chat successfully');

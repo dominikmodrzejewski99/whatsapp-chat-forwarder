@@ -39,6 +39,10 @@ class WhatsAppClient {
     // Add a Set to track processed message IDs and prevent duplicates
     this.processedMessageIds = new Set();
 
+    // Status i kod QR
+    this.status = 'disconnected';
+    this.qrCode = null;
+
     this._setupEventHandlers();
     console.log('WhatsApp client initialized');
   }
@@ -50,18 +54,25 @@ class WhatsAppClient {
       // Generate and display QR code for WhatsApp Web authentication
       console.log('Received QR code. Scan the QR code below to log in to WhatsApp Web:');
       qrcode.generate(qr, { small: true });
+
+      // Zapisz kod QR do późniejszego użycia
+      this.qrCode = qr;
+      this.status = 'connecting';
     });
 
     this.client.on('loading_screen', (percent, message) => {
       console.log('LOADING SCREEN', percent, message);
+      this.status = 'connecting';
     });
 
     this.client.on('authenticated', () => {
       console.log('WhatsApp client authenticated');
+      this.status = 'authenticated';
     });
 
     this.client.on('auth_failure', (msg) => {
       console.error('WhatsApp authentication failed:', msg);
+      this.status = 'disconnected';
     });
 
     this.client.on('ready', () => {
@@ -210,6 +221,22 @@ class WhatsAppClient {
     console.log('Registering message handler');
     this.messageHandlers.push(handler);
     console.log(`Total message handlers: ${this.messageHandlers.length}`);
+  }
+
+  /**
+   * Pobierz aktualny status połączenia WhatsApp
+   * @returns {string} Status połączenia ('disconnected', 'connecting', 'authenticated', 'connected')
+   */
+  getStatus() {
+    return this.status;
+  }
+
+  /**
+   * Pobierz aktualny kod QR (jeśli dostępny)
+   * @returns {string|null} Kod QR lub null jeśli nie jest dostępny
+   */
+  getQRCode() {
+    return this.qrCode;
   }
 }
 

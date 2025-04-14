@@ -3,21 +3,151 @@ const googleChatClient = require('./google-chat-client');
 const messageProcessor = require('./message-processor');
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 const http = require('http');
+const socketIO = require('socket.io');
+const qrcode = require('qrcode');
 
-// Utworzenie prostego serwera HTTP dla Cloud Run
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200);
-    res.end('OK');
-  } else {
-    res.writeHead(200);
-    res.end('WhatsApp to Google Chat integration is running');
-  }
-});
+// Utworzenie aplikacji Express
+const app = express();
+const server = http.createServer(app);
+const io = socketIO(server);
+
+// Konfiguracja middleware
+app.use(express.static('public'));
+app.use(express.json());
 
 // Nasłuchiwanie na porcie określonym przez Cloud Run lub domyślnie 8080
 const PORT = process.env.PORT || 8080;
+
+// Tablica do przechowywania logów
+const logs = [];
+const MAX_LOGS = 1000; // Maksymalna liczba logów do przechowywania
+
+// Flaga zapobiegająca rekurencji
+let isLogging = false;
+
+// Funkcja do bezpiecznej serializacji obiektów (unikanie cykli)
+function safeStringify(obj) {
+    const seen = new WeakSet();
+    return JSON.stringify(obj, (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) {
+                return '[Circular Reference]';
+            }
+            seen.add(value);
+        }
+        return value;
+    });
+}
+
+// Funkcja do dodawania logów
+function addLog(level, message) {
+    // Zapobiegaj rekurencji
+    if (isLogging) return;
+    isLogging = true;
+
+    try {
+        // Konwertuj obiekty na stringi, aby uniknąć problemów z cyklicznymi referencjami
+        let messageStr;
+        if (typeof message === 'object' && message !== null) {
+            try {
+                messageStr = safeStringify(message);
+            } catch (e) {
+                messageStr = String(message);
+            }
+        } else {
+            messageStr = String(message);
+        }
+
+        const logEntry = {
+            timestamp: Date.now(),
+            level,
+            message: messageStr
+        };
+
+        logs.push(logEntry);
+
+        // Ogranicz liczbę przechowywanych logów
+        if (logs.length > MAX_LOGS) {
+            logs.shift(); // Usuń najstarszy log
+        }
+
+        // Wyślij log do wszystkich połączonych klientów
+        io.emit('log', logEntry);
+    } catch (error) {
+        // Użyj oryginalnych funkcji console, aby uniknąć rekurencji
+        originalConsoleError('Error in addLog:', error);
+    } finally {
+        isLogging = false;
+    }
+}
+
+// Nadpisanie standardowych funkcji console
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+const originalConsoleInfo = console.info;
+
+console.log = function() {
+    if (isLogging) {
+        return originalConsoleLog.apply(console, arguments);
+    }
+    try {
+        const message = Array.from(arguments).map(arg =>
+            typeof arg === 'object' && arg !== null ? safeStringify(arg) : String(arg)
+        ).join(' ');
+        addLog('INFO', message);
+    } catch (e) {
+        originalConsoleError('Error in console.log override:', e);
+    }
+    return originalConsoleLog.apply(console, arguments);
+};
+
+console.error = function() {
+    if (isLogging) {
+        return originalConsoleError.apply(console, arguments);
+    }
+    try {
+        const message = Array.from(arguments).map(arg =>
+            typeof arg === 'object' && arg !== null ? safeStringify(arg) : String(arg)
+        ).join(' ');
+        addLog('ERROR', message);
+    } catch (e) {
+        originalConsoleError('Error in console.error override:', e);
+    }
+    return originalConsoleError.apply(console, arguments);
+};
+
+console.warn = function() {
+    if (isLogging) {
+        return originalConsoleWarn.apply(console, arguments);
+    }
+    try {
+        const message = Array.from(arguments).map(arg =>
+            typeof arg === 'object' && arg !== null ? safeStringify(arg) : String(arg)
+        ).join(' ');
+        addLog('WARNING', message);
+    } catch (e) {
+        originalConsoleError('Error in console.warn override:', e);
+    }
+    return originalConsoleWarn.apply(console, arguments);
+};
+
+console.info = function() {
+    if (isLogging) {
+        return originalConsoleInfo.apply(console, arguments);
+    }
+    try {
+        const message = Array.from(arguments).map(arg =>
+            typeof arg === 'object' && arg !== null ? safeStringify(arg) : String(arg)
+        ).join(' ');
+        addLog('INFO', message);
+    } catch (e) {
+        originalConsoleError('Error in console.info override:', e);
+    }
+    return originalConsoleInfo.apply(console, arguments);
+};
 
 async function main() {
   try {
@@ -88,6 +218,45 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled promise rejection:', reason);
 });
 
+// Konfiguracja endpointów API
+app.get('/api/logs', (req, res) => {
+  res.json(logs);
+});
+
+app.get('/api/status', (req, res) => {
+  res.json({
+    whatsapp: whatsappClient.getStatus(),
+    googleChat: googleChatClient.isConfigured() ? 'configured' : 'not_configured'
+  });
+});
+
+// Obsługa połączeń Socket.IO
+io.on('connection', (socket) => {
+  console.log('New client connected');
+
+  // Wyślij aktualne logi do nowego klienta
+  logs.forEach(log => {
+    socket.emit('log', log);
+  });
+
+  // Wyślij aktualny status WhatsApp
+  socket.emit('whatsapp-status', whatsappClient.getStatus());
+
+  // Jeśli jest dostępny kod QR, wyślij go
+  const qrCode = whatsappClient.getQRCode();
+  if (qrCode) {
+    qrcode.toDataURL(qrCode, (err, url) => {
+      if (!err) {
+        socket.emit('qr-code', url);
+      }
+    });
+  }
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
+
 // Start the application
 console.log('Starting application...');
 main();
@@ -95,4 +264,5 @@ main();
 // Uruchom serwer HTTP
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
+  console.log(`Web interface available at http://localhost:${PORT}`);
 });
