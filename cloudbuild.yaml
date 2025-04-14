@@ -2,11 +2,11 @@ steps:
   # Zbuduj obraz Docker
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/whatsapp-gchat-integration', '.']
-  
+
   # Wypchnij obraz do Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/whatsapp-gchat-integration']
-  
+
   # Wdróż na Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -28,7 +28,12 @@ steps:
       - '--cpu'
       - '1'
       - '--set-env-vars'
-      - 'NODE_ENV=production'
+      - 'NODE_ENV=production,WHATSAPP_GROUP_NAME=${_WHATSAPP_GROUP_NAME},GOOGLE_CHAT_WEBHOOK_URL=${_GOOGLE_CHAT_WEBHOOK_URL},MESSAGE_CHECK_INTERVAL=${_MESSAGE_CHECK_INTERVAL}'
+
+substitutions:
+  _WHATSAPP_GROUP_NAME: "Food Delivery Channel"
+  _GOOGLE_CHAT_WEBHOOK_URL: ""  # Ustaw w konsoli Cloud Build lub przekaż jako parametr
+  _MESSAGE_CHECK_INTERVAL: "60000"
 
 images:
   - 'gcr.io/$PROJECT_ID/whatsapp-gchat-integration'

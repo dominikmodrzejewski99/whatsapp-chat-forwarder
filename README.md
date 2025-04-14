@@ -6,8 +6,7 @@ This application automatically forwards food delivery information from a WhatsAp
 
 - Node.js (v14 or higher)
 - npm
-- A Google Cloud Platform account with the Google Chat API enabled
-- A service account with permissions to post to Google Chat
+- Google Chat webhook URL
 
 ## Setup
 
@@ -16,9 +15,7 @@ This application automatically forwards food delivery information from a WhatsAp
    ```
    npm install
    ```
-3. Create a service account in Google Cloud Platform and download the credentials JSON file
-4. Place the credentials file in the project directory (or specify its location in the .env file)
-5. Configure the .env file with your WhatsApp group name and Google Chat space ID
+3. Configure the .env file with your WhatsApp group name and Google Chat webhook URL
 
 ## Configuration
 
@@ -29,11 +26,16 @@ Edit the `.env` file to configure the application:
 WHATSAPP_GROUP_NAME="Food Delivery Channel"
 
 # Google Chat Configuration
-GOOGLE_APPLICATION_CREDENTIALS="./credentials.json"
-GOOGLE_CHAT_SPACE="spaces/YOUR_SPACE_ID"
+GOOGLE_CHAT_WEBHOOK_URL="https://chat.googleapis.com/v1/spaces/YOUR_SPACE_ID/messages?key=YOUR_KEY&token=YOUR_TOKEN"
+
+# Google Credentials (jako JSON string)
+GOOGLE_CREDENTIALS='{"type":"service_account","project_id":"your-project","private_key_id":"key-id","private_key":"-----BEGIN PRIVATE KEY-----\nkey-content\n-----END PRIVATE KEY-----\n","client_email":"service-account@project.iam.gserviceaccount.com","client_id":"client-id","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/service-account%40project.iam.gserviceaccount.com"}'
 
 # Application Configuration
 MESSAGE_CHECK_INTERVAL=60000  # Check for new messages every 60 seconds
+
+# Port Configuration (for Cloud Run)
+PORT=8080
 ```
 
 ## Running the Application
@@ -57,8 +59,33 @@ The first time you run the application, you'll need to scan a QR code to authent
 
 You can customize how the application detects food delivery messages by modifying the `isFoodDeliveryMessage` function in `message-processor.js`. By default, it looks for keywords related to food delivery.
 
+## Wdrożenie na Google Cloud Run
+
+1. Zbuduj obraz Docker:
+   ```
+   docker build -t gcr.io/[PROJECT_ID]/whatsapp-gchat-integration .
+   ```
+
+2. Wypchnij obraz do Container Registry:
+   ```
+   docker push gcr.io/[PROJECT_ID]/whatsapp-gchat-integration
+   ```
+
+3. Wdróż na Cloud Run:
+   ```
+   gcloud run deploy whatsapp-gchat-integration \
+     --image gcr.io/[PROJECT_ID]/whatsapp-gchat-integration \
+     --platform managed \
+     --region europe-west1 \
+     --allow-unauthenticated \
+     --memory 512Mi \
+     --timeout 300s \
+     --cpu 1 \
+     --set-env-vars WHATSAPP_GROUP_NAME="Nazwa Twojej Grupy",GOOGLE_CHAT_WEBHOOK_URL="https://chat.googleapis.com/v1/spaces/TWÓJ_SPACE_ID/messages?key=TWÓJ_KLUCZ&token=TWÓJ_TOKEN"
+   ```
+
 ## Troubleshooting
 
 - If you're having trouble connecting to WhatsApp, try deleting the `.wwebjs_auth` directory and restarting the application
-- Make sure your Google service account has the necessary permissions to post to the Google Chat space
+- Make sure your Google Chat webhook URL is correct
 - Check the console output for error messages

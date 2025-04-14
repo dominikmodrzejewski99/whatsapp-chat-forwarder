@@ -24,29 +24,23 @@ async function main() {
     console.log('Starting WhatsApp to Google Chat integration...');
     console.log('Current directory:', process.cwd());
 
-    // Check if credentials.json exists
-    const credentialsPath = path.resolve('./credentials.json');
-    console.log('Checking for credentials.json at:', credentialsPath);
+    // Sprawdź, czy zmienne środowiskowe są skonfigurowane
+    console.log('Checking environment variables for credentials...');
 
-    if (fs.existsSync(credentialsPath)) {
-      console.log('credentials.json found');
-      try {
-        const stats = fs.statSync(credentialsPath);
-        console.log('File size:', stats.size, 'bytes');
-        console.log('File permissions:', stats.mode.toString(8));
-
-        // Try to read the file to make sure it's accessible
-        const fileContent = fs.readFileSync(credentialsPath, 'utf8');
-        console.log('File is readable. First 100 characters:', fileContent.substring(0, 100) + '...');
-      } catch (fileError) {
-        console.error('Error reading credentials.json:', fileError);
-      }
+    // Sprawdź konfigurację Google Chat
+    if (process.env.GOOGLE_CHAT_WEBHOOK_URL) {
+      console.log('Google Chat webhook URL found in environment variables');
     } else {
-      console.error('credentials.json not found!');
-      console.log('Available files in current directory:');
-      fs.readdirSync('./').forEach(file => {
-        console.log('- ' + file);
-      });
+      console.warn('Google Chat webhook URL not found in environment variables!');
+      console.warn('Please set GOOGLE_CHAT_WEBHOOK_URL environment variable');
+    }
+
+    // Sprawdź konfigurację WhatsApp
+    if (process.env.WHATSAPP_GROUP_NAME) {
+      console.log('WhatsApp group name found in environment variables:', process.env.WHATSAPP_GROUP_NAME);
+    } else {
+      console.warn('WhatsApp group name not found in environment variables!');
+      console.warn('Please set WHATSAPP_GROUP_NAME environment variable');
     }
 
     // Initialize Google Chat client

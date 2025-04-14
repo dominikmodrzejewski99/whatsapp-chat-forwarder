@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: whatsapp-gchat-integration
+    env: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WHATSAPP_GROUP_NAME
+        sync: false  # Oznacza, że wartość będzie ustawiona ręcznie w panelu Render
+      - key: GOOGLE_CHAT_WEBHOOK_URL
+        sync: false
+      - key: GOOGLE_CREDENTIALS
+        sync: false  # Dane uwierzytelniające będą ustawione ręcznie w panelu Render
+      - key: MESSAGE_CHECK_INTERVAL
+        value: 60000
+    autoDeploy: true  # Automatyczne wdrażanie po zmianach w repozytorium
