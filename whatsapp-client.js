@@ -39,6 +39,10 @@ class WhatsAppClient {
     // Add a Set to track processed message IDs and prevent duplicates
     this.processedMessageIds = new Set();
 
+    // Przechowywanie najnowszego kodu QR
+    this.currentQR = null;
+    this.lastQRTimestamp = 0;
+
     // Status i kod QR
     this.status = 'disconnected';
     this.qrCode = null;
@@ -58,6 +62,9 @@ class WhatsAppClient {
       // Zapisz kod QR do późniejszego użycia
       console.log('Saving QR code for later use. QR code length:', qr.length);
       this.qrCode = qr;
+      this.currentQR = qr;
+      this.lastQRTimestamp = Date.now();
+      console.log(`QR code timestamp: ${new Date(this.lastQRTimestamp).toISOString()}`);
       this.status = 'connecting';
 
       // Emituj zdarzenie do wszystkich klientów
