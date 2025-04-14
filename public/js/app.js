@@ -134,6 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit('request-qr');
     });
 
+    // Aktualizacja roku w stopce
+    const currentYearElement = document.getElementById('current-year');
+    if (currentYearElement) {
+        currentYearElement.textContent = new Date().getFullYear();
+    }
+
     // Inicjalizacja
     updateStatus('Oczekiwanie na połączenie...', 'disconnected');
 });

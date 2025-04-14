@@ -1,0 +1,1 @@
+Należy wygenerować właściwe ikony i umieścić je w katalogu public/img

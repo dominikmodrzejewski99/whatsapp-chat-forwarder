@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Favicon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 20px;
+        }
+        .download-links {
+            margin: 20px;
+        }
+        .download-links a {
+            display: block;
+            margin: 10px;
+            padding: 10px;
+            background-color: #128C7E;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Favicon Generator</h1>
+    <p>Poniżej znajdują się wygenerowane ikony. Kliknij, aby pobrać.</p>
+    
+    <div>
+        <h2>Favicon 16x16</h2>
+        <canvas id="favicon16" width="16" height="16"></canvas>
+    </div>
+    
+    <div>
+        <h2>Favicon 32x32</h2>
+        <canvas id="favicon32" width="32" height="32"></canvas>
+    </div>
+    
+    <div>
+        <h2>Apple Touch Icon 180x180</h2>
+        <canvas id="apple" width="180" height="180"></canvas>
+    </div>
+    
+    <div class="download-links" id="download-links">
+        <!-- Linki do pobrania będą tutaj -->
+    </div>
+    
+    <script>
+        // Funkcja do rysowania ikony
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Tło
+            ctx.fillStyle = '#128C7E'; // Kolor WhatsApp
+            ctx.fillRect(0, 0, size, size);
+            
+            // Tekst
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${size * 0.6}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('W', size / 2, size / 2);
+            
+            // Dodaj link do pobrania
+            const downloadLink = document.createElement('a');
+            downloadLink.href = canvas.toDataURL('image/png');
+            downloadLink.download = `favicon-${size}x${size}.png`;
+            downloadLink.textContent = `Pobierz ikonę ${size}x${size}`;
+            document.getElementById('download-links').appendChild(downloadLink);
+        }
+        
+        // Generuj ikony
+        window.onload = function() {
+            drawIcon('favicon16', 16);
+            drawIcon('favicon32', 32);
+            drawIcon('apple', 180);
+        };
+    </script>
+</body>
+</html>

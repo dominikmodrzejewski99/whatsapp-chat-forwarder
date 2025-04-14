@@ -1,0 +1,19 @@
+{
+    "name": "WhatsApp to Google Chat",
+    "short_name": "WA2GChat",
+    "icons": [
+        {
+            "src": "/img/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/img/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#128C7E",
+    "background_color": "#ffffff",
+    "display": "standalone"
+}
