@@ -28,7 +28,7 @@ WHATSAPP_GROUP_NAME="Food Delivery Channel"
 # Google Chat Configuration
 GOOGLE_CHAT_WEBHOOK_URL="https://chat.googleapis.com/v1/spaces/YOUR_SPACE_ID/messages?key=YOUR_KEY&token=YOUR_TOKEN"
 
-# Google Credentials (jako JSON string)
+# Google Credentials (as a JSON string)
 GOOGLE_CREDENTIALS='{"type":"service_account","project_id":"your-project","private_key_id":"key-id","private_key":"-----BEGIN PRIVATE KEY-----\nkey-content\n-----END PRIVATE KEY-----\n","client_email":"service-account@project.iam.gserviceaccount.com","client_id":"client-id","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/service-account%40project.iam.gserviceaccount.com"}'
 
 # Application Configuration
@@ -59,19 +59,19 @@ The first time you run the application, you'll need to scan a QR code to authent
 
 You can customize how the application detects food delivery messages by modifying the `isFoodDeliveryMessage` function in `message-processor.js`. By default, it looks for keywords related to food delivery.
 
-## Wdrożenie na Google Cloud Run
+## Deployment on Google Cloud Run
 
-1. Zbuduj obraz Docker:
+1. Build the Docker image:
    ```
    docker build -t gcr.io/[PROJECT_ID]/whatsapp-gchat-integration .
    ```
 
-2. Wypchnij obraz do Container Registry:
+2. Push the image to Container Registry:
    ```
    docker push gcr.io/[PROJECT_ID]/whatsapp-gchat-integration
    ```
 
-3. Wdróż na Cloud Run:
+3. Deploy to Cloud Run:
    ```
    gcloud run deploy whatsapp-gchat-integration \
      --image gcr.io/[PROJECT_ID]/whatsapp-gchat-integration \
@@ -81,7 +81,7 @@ You can customize how the application detects food delivery messages by modifyin
      --memory 512Mi \
      --timeout 300s \
      --cpu 1 \
-     --set-env-vars WHATSAPP_GROUP_NAME="Nazwa Twojej Grupy",GOOGLE_CHAT_WEBHOOK_URL="https://chat.googleapis.com/v1/spaces/TWÓJ_SPACE_ID/messages?key=TWÓJ_KLUCZ&token=TWÓJ_TOKEN"
+     --set-env-vars WHATSAPP_GROUP_NAME="Your Group Name",GOOGLE_CHAT_WEBHOOK_URL="https://chat.googleapis.com/v1/spaces/YOUR_SPACE_ID/messages?key=YOUR_KEY&token=YOUR_TOKEN"
    ```
 
 ## Troubleshooting
