@@ -13,6 +13,9 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
+// Udostępnij obiekt io globalnie, aby był dostępny w innych modułach
+global.io = io;
+
 // Konfiguracja middleware
 app.use(express.static('public'));
 app.use(express.json());
@@ -244,13 +247,38 @@ io.on('connection', (socket) => {
 
   // Jeśli jest dostępny kod QR, wyślij go
   const qrCode = whatsappClient.getQRCode();
+  console.log('QR Code available:', qrCode ? 'Yes' : 'No');
+
   if (qrCode) {
+    console.log('Converting QR code to data URL...');
     qrcode.toDataURL(qrCode, (err, url) => {
       if (!err) {
+        console.log('QR code converted successfully, sending to client');
         socket.emit('qr-code', url);
+      } else {
+        console.error('Error converting QR code to data URL:', err);
       }
     });
+  } else {
+    console.log('No QR code available to send');
   }
+
+  // Obsługa żądania nowego kodu QR
+  socket.on('request-qr', () => {
+    console.log('Client requested new QR code');
+    try {
+      // Zresetuj sesję WhatsApp i wygeneruj nowy kod QR
+      whatsappClient.resetSession()
+        .then(() => {
+          console.log('WhatsApp session reset successfully');
+        })
+        .catch(err => {
+          console.error('Error resetting WhatsApp session:', err);
+        });
+    } catch (error) {
+      console.error('Error handling request-qr event:', error);
+    }
+  });
 
   socket.on('disconnect', () => {
     console.log('Client disconnected');

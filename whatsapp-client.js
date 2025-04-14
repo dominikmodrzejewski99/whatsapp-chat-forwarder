@@ -56,8 +56,28 @@ class WhatsAppClient {
       qrcode.generate(qr, { small: true });
 
       // Zapisz kod QR do późniejszego użycia
+      console.log('Saving QR code for later use. QR code length:', qr.length);
       this.qrCode = qr;
       this.status = 'connecting';
+
+      // Emituj zdarzenie do wszystkich klientów
+      if (global.io) {
+        console.log('Emitting QR code to all connected clients');
+        global.io.emit('whatsapp-status', 'connecting');
+
+        // Konwertuj kod QR na URL danych i wyślij
+        const qrcode = require('qrcode');
+        qrcode.toDataURL(qr, (err, url) => {
+          if (!err) {
+            console.log('QR code converted to data URL, emitting to clients');
+            global.io.emit('qr-code', url);
+          } else {
+            console.error('Error converting QR code to data URL:', err);
+          }
+        });
+      } else {
+        console.log('Socket.IO not available, cannot emit QR code');
+      }
     });
 
     this.client.on('loading_screen', (percent, message) => {
@@ -77,7 +97,15 @@ class WhatsAppClient {
 
     this.client.on('ready', () => {
       console.log('WhatsApp client is ready!');
+      this.status = 'connected';
+      this.qrCode = null; // Wyczyść kod QR po połączeniu
       this._findTargetGroup();
+
+      // Powiadom klientów o połączeniu
+      if (global.io) {
+        console.log('Emitting connected status to all clients');
+        global.io.emit('whatsapp-status', 'connected');
+      }
     });
 
     // Funkcja do przetwarzania wiadomości - używana przez oba zdarzenia
@@ -167,6 +195,13 @@ class WhatsAppClient {
 
     this.client.on('disconnected', (reason) => {
       console.log('[LISTENER] WhatsApp client was disconnected', reason);
+      this.status = 'disconnected';
+
+      // Powiadom klientów o rozłączeniu
+      if (global.io) {
+        console.log('Emitting disconnected status to all clients');
+        global.io.emit('whatsapp-status', 'disconnected');
+      }
     });
 
     console.log('WhatsApp event handlers set up');
@@ -237,6 +272,86 @@ class WhatsAppClient {
    */
   getQRCode() {
     return this.qrCode;
+  }
+
+  /**
+   * Resetuje sesję WhatsApp, aby wygenerować nowy kod QR
+   * @returns {Promise<void>}
+   */
+  async resetSession() {
+    console.log('Resetting WhatsApp session to generate new QR code...');
+
+    try {
+      // Najpierw rozłącz obecną sesję
+      if (this.client) {
+        console.log('Logging out from current session...');
+        try {
+          await this.client.logout();
+          console.log('Logged out successfully');
+        } catch (logoutError) {
+          console.log('Error during logout or already logged out:', logoutError.message);
+          // Kontynuuj mimo błędu wylogowania
+        }
+
+        // Zatrzymaj klienta
+        console.log('Destroying current client...');
+        try {
+          await this.client.destroy();
+          console.log('Client destroyed successfully');
+        } catch (destroyError) {
+          console.log('Error destroying client:', destroyError.message);
+          // Kontynuuj mimo błędu
+        }
+      }
+
+      // Usuń dane sesji
+      console.log('Resetting status and QR code...');
+      this.status = 'disconnected';
+      this.qrCode = null;
+      this.targetGroup = null;
+
+      // Powiadom klientów o zmianie statusu
+      if (global.io) {
+        global.io.emit('whatsapp-status', 'disconnected');
+      }
+
+      // Utwórz nowego klienta
+      console.log('Creating new WhatsApp client...');
+      this.client = new Client({
+        authStrategy: new LocalAuth({ clientId: 'whatsapp-gchat-integration-' + Date.now() }),
+        puppeteer: {
+          headless: 'new',
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+          ],
+          timeout: 60000,
+        },
+        webVersionCache: {
+          type: 'none',
+        },
+        restartOnAuthFail: true,
+      });
+
+      // Skonfiguruj obsługę zdarzeń
+      this._setupEventHandlers();
+
+      // Zainicjuj nowego klienta
+      console.log('Initializing new WhatsApp client...');
+      await this.client.initialize();
+      console.log('New WhatsApp client initialized successfully');
+
+      return true;
+    } catch (error) {
+      console.error('Error resetting WhatsApp session:', error);
+      throw error;
+    }
   }
 }
 

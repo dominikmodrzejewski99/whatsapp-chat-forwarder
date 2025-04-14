@@ -87,6 +87,26 @@ section {
 }
 
 /* QR Code Section */
+.qr-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.qr-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.qr-button:hover {
+    background-color: var(--dark-color);
+}
+
 #qr-container {
     display: flex;
     justify-content: center;

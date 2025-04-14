@@ -11,7 +11,7 @@
         <header>
             <h1>WhatsApp to Google Chat Integration</h1>
         </header>
-        
+
         <main>
             <section id="status-section">
                 <h2>Status</h2>
@@ -20,16 +20,19 @@
                     <div id="status-light" class="status-light disconnected"></div>
                 </div>
             </section>
-            
+
             <section id="qr-section">
                 <h2>Kod QR do autoryzacji WhatsApp</h2>
+                <div class="qr-controls">
+                    <button id="refresh-qr" class="qr-button">Odśwież kod QR</button>
+                </div>
                 <div id="qr-container">
                     <div id="qr-placeholder">Oczekiwanie na kod QR...</div>
                     <div id="qr-code"></div>
                 </div>
                 <p id="qr-instructions">Zeskanuj kod QR za pomocą aplikacji WhatsApp na swoim telefonie, aby połączyć się z WhatsApp Web.</p>
             </section>
-            
+
             <section id="logs-section">
                 <h2>Logi aplikacji</h2>
                 <div class="controls">
@@ -41,12 +44,12 @@
                 </div>
             </section>
         </main>
-        
+
         <footer>
             <p>&copy; 2024 WhatsApp to Google Chat Integration</p>
         </footer>
     </div>
-    
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/app.js"></script>
 </body>
